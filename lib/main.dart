@@ -18,13 +18,19 @@ class BukuKontakApp extends StatelessWidget {
   }
 }
 
-// Model data untuk kontak
+// Model data untuk kontak dengan tambahan status favorit
 class KontakModel {
   final String nama;
   final String email;
   final String telepon;
+  bool isFavorit;
 
-  KontakModel({required this.nama, required this.email, required this.telepon});
+  KontakModel({
+    required this.nama,
+    required this.email,
+    required this.telepon,
+    this.isFavorit = false,
+  });
 }
 
 class BerandaPage extends StatefulWidget {
@@ -42,7 +48,6 @@ class _BerandaPageState extends State<BerandaPage>
   @override
   void initState() {
     super.initState();
-    // Inisialisasi TabController dengan 2 tab
     _tabController = TabController(length: 2, vsync: this);
   }
 
@@ -61,15 +66,25 @@ class _BerandaPageState extends State<BerandaPage>
     });
   }
 
-  // Fungsi untuk menghapus kontak berdasarkan index
-  void _hapusKontak(int index) {
+  // Fungsi untuk menghapus kontak berdasarkan objek
+  void _hapusKontak(KontakModel kontak) {
     setState(() {
-      _daftarKontak.removeAt(index);
+      _daftarKontak.remove(kontak);
+    });
+  }
+
+  // Fungsi untuk mengubah status favorit
+  void _toggleFavorit(KontakModel kontak) {
+    setState(() {
+      kontak.isFavorit = !kontak.isFavorit;
     });
   }
 
   @override
   Widget build(BuildContext context) {
+    // Memfilter daftar kontak yang berstatus favorit
+    final daftarFavorit = _daftarKontak.where((k) => k.isFavorit).toList();
+
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.blue,
@@ -80,7 +95,7 @@ class _BerandaPageState extends State<BerandaPage>
           child: Container(
             color: Colors.blue,
             child: TabBar(
-              controller: _tabController, // Hubungkan controller di sini
+              controller: _tabController,
               labelColor: Colors.white,
               unselectedLabelColor: Colors.white70,
               indicatorColor: Colors.white,
@@ -107,8 +122,8 @@ class _BerandaPageState extends State<BerandaPage>
               leading: const Icon(Icons.book),
               title: const Text('Kontak'),
               onTap: () {
-                Navigator.pop(context); // Tutup drawer
-                _tabController.animateTo(0); // Pindah ke tab Kontak (index 0)
+                Navigator.pop(context);
+                _tabController.animateTo(0);
               },
             ),
             ListTile(
@@ -135,8 +150,8 @@ class _BerandaPageState extends State<BerandaPage>
               leading: const Icon(Icons.star),
               title: const Text('Favorit'),
               onTap: () {
-                Navigator.pop(context); // Tutup drawer
-                _tabController.animateTo(1); // Pindah ke tab Favorit (index 1)
+                Navigator.pop(context);
+                _tabController.animateTo(1);
               },
             ),
             ListTile(
@@ -154,10 +169,17 @@ class _BerandaPageState extends State<BerandaPage>
         ),
       ),
       body: TabBarView(
-        controller: _tabController, // Hubungkan controller di sini
+        controller: _tabController,
         children: [
-          KontakPage(daftarKontak: _daftarKontak, onHapus: _hapusKontak),
-          const FavoritPage(),
+          KontakPage(
+            daftarKontak: _daftarKontak,
+            onHapus: _hapusKontak,
+            onToggleFavorit: _toggleFavorit,
+          ),
+          FavoritPage(
+            daftarFavorit: daftarFavorit,
+            onToggleFavorit: _toggleFavorit,
+          ),
         ],
       ),
       floatingActionButton: FloatingActionButton(
@@ -178,12 +200,14 @@ class _BerandaPageState extends State<BerandaPage>
 
 class KontakPage extends StatelessWidget {
   final List<KontakModel> daftarKontak;
-  final Function(int) onHapus;
+  final Function(KontakModel) onHapus;
+  final Function(KontakModel) onToggleFavorit;
 
   const KontakPage({
     super.key,
     required this.daftarKontak,
     required this.onHapus,
+    required this.onToggleFavorit,
   });
 
   @override
@@ -206,11 +230,21 @@ class KontakPage extends StatelessWidget {
           title: Text(kontak.nama),
           subtitle: Text('${kontak.email}\n${kontak.telepon}'),
           isThreeLine: true,
-          trailing: IconButton(
-            icon: const Icon(Icons.delete, color: Colors.red),
-            onPressed: () {
-              onHapus(index);
-            },
+          trailing: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              IconButton(
+                icon: Icon(
+                  kontak.isFavorit ? Icons.star : Icons.star_border,
+                  color: Colors.amber,
+                ),
+                onPressed: () => onToggleFavorit(kontak),
+              ),
+              IconButton(
+                icon: const Icon(Icons.delete, color: Colors.red),
+                onPressed: () => onHapus(kontak),
+              ),
+            ],
           ),
         );
       },
@@ -218,16 +252,44 @@ class KontakPage extends StatelessWidget {
   }
 }
 
+// FavoritPage gabungan: Menampilkan kontak bawaan (Anshar)
+// dan kontak dinamis yang ditandai bintang
 class FavoritPage extends StatelessWidget {
-  const FavoritPage({super.key});
+  final List<KontakModel> daftarFavorit;
+  final Function(KontakModel) onToggleFavorit;
+
+  const FavoritPage({
+    super.key,
+    required this.daftarFavorit,
+    required this.onToggleFavorit,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return const Center(
-      child: Text(
-        'Belum ada kontak favorit',
-        style: TextStyle(fontSize: 16, color: Colors.grey),
-      ),
+    return ListView(
+      children: [
+        // Kontak statis/bawaan milikmu
+        const ListTile(
+          leading: Icon(Icons.person),
+          title: Text('Andreas Dwi Prakasa'),
+          subtitle: Text('andreasprakasa85@gmail.com\n082206541044'),
+          isThreeLine: true,
+          trailing: Icon(Icons.star, color: Colors.amber),
+        ),
+        // Kontak dinamis dari tab 'Kontak' yang ditandai bintang
+        ...daftarFavorit.map(
+          (kontak) => ListTile(
+            leading: const Icon(Icons.person),
+            title: Text(kontak.nama),
+            subtitle: Text('${kontak.email}\n${kontak.telepon}'),
+            isThreeLine: true,
+            trailing: IconButton(
+              icon: const Icon(Icons.star, color: Colors.amber),
+              onPressed: () => onToggleFavorit(kontak),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
@@ -240,6 +302,7 @@ class TambahKontakPage extends StatefulWidget {
 }
 
 class _TambahKontakPageState extends State<TambahKontakPage> {
+  final _formKey = GlobalKey<FormState>();
   final TextEditingController _namaController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _teleponController = TextEditingController();
@@ -254,40 +317,47 @@ class _TambahKontakPageState extends State<TambahKontakPage> {
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            TextField(
-              controller: _namaController,
-              decoration: const InputDecoration(labelText: 'Nama Lengkap'),
-            ),
-            TextField(
-              controller: _emailController,
-              decoration: const InputDecoration(labelText: 'Email'),
-            ),
-            TextField(
-              controller: _teleponController,
-              decoration: const InputDecoration(labelText: 'No Handphone'),
-              keyboardType: TextInputType.phone,
-            ),
-            const SizedBox(height: 30),
-            ElevatedButton(
-              onPressed: () {
-                final nama = _namaController.text;
-                final email = _emailController.text;
-                final telepon = _teleponController.text;
-
-                if (nama.isNotEmpty) {
-                  Navigator.pop(
-                    context,
-                    KontakModel(nama: nama, email: email, telepon: telepon),
-                  );
-                } else {
-                  Navigator.pop(context);
-                }
-              },
-              child: const Text('Simpan'),
-            ),
-          ],
+        child: Form(
+          key: _formKey,
+          child: Column(
+            children: [
+              TextFormField(
+                controller: _namaController,
+                decoration: const InputDecoration(labelText: 'Nama Lengkap'),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Nama tidak boleh kosong';
+                  }
+                  return null;
+                },
+              ),
+              TextFormField(
+                controller: _emailController,
+                decoration: const InputDecoration(labelText: 'Email'),
+              ),
+              TextFormField(
+                controller: _teleponController,
+                decoration: const InputDecoration(labelText: 'No Handphone'),
+                keyboardType: TextInputType.phone,
+              ),
+              const SizedBox(height: 30),
+              ElevatedButton(
+                onPressed: () {
+                  if (_formKey.currentState!.validate()) {
+                    Navigator.pop(
+                      context,
+                      KontakModel(
+                        nama: _namaController.text,
+                        email: _emailController.text,
+                        telepon: _teleponController.text,
+                      ),
+                    );
+                  }
+                },
+                child: const Text('Simpan'),
+              ),
+            ],
+          ),
         ),
       ),
     );
