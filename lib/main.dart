@@ -361,14 +361,35 @@ class _TambahKontakPageState extends State<TambahKontakPage> {
                 },
               ),
               TextFormField(
-                controller: _emailController,
-                decoration: const InputDecoration(labelText: 'Email'),
-              ),
+  controller: _emailController,
+  decoration: const InputDecoration(labelText: 'Email'),
+  validator: (value) {
+    if (value == null || value.isEmpty) {
+      return 'Email tidak boleh kosong';
+    }
+    if (!value.contains('@')) {
+      return 'Email harus mengandung karakter @';
+    }
+    return null;
+  },
+),
               TextFormField(
-                controller: _teleponController,
-                decoration: const InputDecoration(labelText: 'No Handphone'),
-                keyboardType: TextInputType.phone,
-              ),
+  controller: _teleponController,
+  decoration: const InputDecoration(labelText: 'No Handphone'),
+  keyboardType: TextInputType.phone,
+  validator: (value) {
+    if (value == null || value.isEmpty) {
+      return 'No Handphone tidak boleh kosong';
+    }
+    if (!RegExp(r'^[0-9]+$').hasMatch(value)) {
+      return 'No Handphone hanya boleh angka';
+    }
+    if (value.length < 10) {
+      return 'No Handphone minimal 10 digit';
+    }
+    return null;
+  },
+),
               TextFormField(
                 controller: _kategoriController,
                 decoration: const InputDecoration(
