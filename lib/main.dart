@@ -226,8 +226,14 @@ class KontakPage extends StatelessWidget {
       itemBuilder: (context, index) {
         final kontak = daftarKontak[index];
         return ListTile(
-          leading: const Icon(Icons.person),
-          title: Text(kontak.nama),
+  leading: CircleAvatar(
+    backgroundColor: Colors.blue,
+    child: Text(
+      kontak.nama.isNotEmpty ? kontak.nama[0].toUpperCase() : '?',
+      style: const TextStyle(color: Colors.white),
+    ),
+  ),
+  title: Text(kontak.nama),
           subtitle: Text('${kontak.email}\n${kontak.telepon}'),
           isThreeLine: true,
           trailing: Row(
