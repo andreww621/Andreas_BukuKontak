@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 
 void main() {
@@ -47,6 +48,10 @@ class _BerandaPageState extends State<BerandaPage>
   late TabController _tabController;
   final List<KontakModel> _daftarKontak = [];
 
+  // StreamController untuk fitur pencarian real-time (Tugas 6)
+  final StreamController<String> _searchController =
+      StreamController<String>.broadcast();
+
   @override
   void initState() {
     super.initState();
@@ -56,6 +61,7 @@ class _BerandaPageState extends State<BerandaPage>
   @override
   void dispose() {
     _tabController.dispose();
+    _searchController.close(); // wajib ditutup supaya tidak memory leak
     super.dispose();
   }
 
@@ -184,11 +190,48 @@ class _BerandaPageState extends State<BerandaPage>
       body: TabBarView(
         controller: _tabController,
         children: [
-          KontakPage(
-            daftarKontak: _daftarKontak,
-            onHapus: _hapusKontak,
-            onToggleFavorit: _toggleFavorit,
+          // TAB 1: Kontak + search box real-time dengan Stream (Tugas 6)
+          Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: TextField(
+                  decoration: const InputDecoration(
+                    labelText: 'Cari kontak (nama/kategori)',
+                    prefixIcon: Icon(Icons.search),
+                    border: OutlineInputBorder(),
+                  ),
+                  onChanged: (teks) {
+                    _searchController.add(teks);
+                  },
+                ),
+              ),
+              Expanded(
+                child: StreamBuilder<String>(
+                  stream: _searchController.stream,
+                  initialData: '',
+                  builder: (context, snapshot) {
+                    final keyword = (snapshot.data ?? '').toLowerCase();
+                    final hasilFilter = _daftarKontak.where((k) {
+                      final namaCocok =
+                          k.nama.toLowerCase().contains(keyword);
+                      final kategoriCocok = (k.kategori ?? '')
+                          .toLowerCase()
+                          .contains(keyword);
+                      return namaCocok || kategoriCocok;
+                    }).toList();
+
+                    return KontakPage(
+                      daftarKontak: hasilFilter,
+                      onHapus: _hapusKontak,
+                      onToggleFavorit: _toggleFavorit,
+                    );
+                  },
+                ),
+              ),
+            ],
           ),
+          // TAB 2: Favorit
           FavoritPage(
             daftarFavorit: daftarFavorit,
             onToggleFavorit: _toggleFavorit,
@@ -361,35 +404,35 @@ class _TambahKontakPageState extends State<TambahKontakPage> {
                 },
               ),
               TextFormField(
-  controller: _emailController,
-  decoration: const InputDecoration(labelText: 'Email'),
-  validator: (value) {
-    if (value == null || value.isEmpty) {
-      return 'Email tidak boleh kosong';
-    }
-    if (!value.contains('@')) {
-      return 'Email harus mengandung karakter @';
-    }
-    return null;
-  },
-),
+                controller: _emailController,
+                decoration: const InputDecoration(labelText: 'Email'),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Email tidak boleh kosong';
+                  }
+                  if (!value.contains('@')) {
+                    return 'Email harus mengandung karakter @';
+                  }
+                  return null;
+                },
+              ),
               TextFormField(
-  controller: _teleponController,
-  decoration: const InputDecoration(labelText: 'No Handphone'),
-  keyboardType: TextInputType.phone,
-  validator: (value) {
-    if (value == null || value.isEmpty) {
-      return 'No Handphone tidak boleh kosong';
-    }
-    if (!RegExp(r'^[0-9]+$').hasMatch(value)) {
-      return 'No Handphone hanya boleh angka';
-    }
-    if (value.length < 10) {
-      return 'No Handphone minimal 10 digit';
-    }
-    return null;
-  },
-),
+                controller: _teleponController,
+                decoration: const InputDecoration(labelText: 'No Handphone'),
+                keyboardType: TextInputType.phone,
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'No Handphone tidak boleh kosong';
+                  }
+                  if (!RegExp(r'^[0-9]+$').hasMatch(value)) {
+                    return 'No Handphone hanya boleh angka';
+                  }
+                  if (value.length < 10) {
+                    return 'No Handphone minimal 10 digit';
+                  }
+                  return null;
+                },
+              ),
               TextFormField(
                 controller: _kategoriController,
                 decoration: const InputDecoration(
