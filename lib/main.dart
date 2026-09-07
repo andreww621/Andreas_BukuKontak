@@ -18,17 +18,19 @@ class BukuKontakApp extends StatelessWidget {
   }
 }
 
-// Model data untuk kontak dengan tambahan status favorit
+// Model data untuk kontak dengan tambahan status favorit dan kategori (nullable)
 class KontakModel {
   final String nama;
   final String email;
   final String telepon;
+  final String? kategori;
   bool isFavorit;
 
   KontakModel({
     required this.nama,
     required this.email,
     required this.telepon,
+    this.kategori,
     this.isFavorit = false,
   });
 }
@@ -58,10 +60,20 @@ class _BerandaPageState extends State<BerandaPage>
   }
 
   // Fungsi untuk menambah kontak baru
-  void _tambahKontak(String nama, String email, String telepon) {
+  void _tambahKontak(
+    String nama,
+    String email,
+    String telepon,
+    String? kategori,
+  ) {
     setState(() {
       _daftarKontak.add(
-        KontakModel(nama: nama, email: email, telepon: telepon),
+        KontakModel(
+          nama: nama,
+          email: email,
+          telepon: telepon,
+          kategori: kategori,
+        ),
       );
     });
   }
@@ -142,6 +154,7 @@ class _BerandaPageState extends State<BerandaPage>
                     hasilBaru.nama,
                     hasilBaru.email,
                     hasilBaru.telepon,
+                    hasilBaru.kategori,
                   );
                 }
               },
@@ -189,7 +202,12 @@ class _BerandaPageState extends State<BerandaPage>
             MaterialPageRoute(builder: (context) => const TambahKontakPage()),
           );
           if (hasilBaru != null && hasilBaru is KontakModel) {
-            _tambahKontak(hasilBaru.nama, hasilBaru.email, hasilBaru.telepon);
+            _tambahKontak(
+              hasilBaru.nama,
+              hasilBaru.email,
+              hasilBaru.telepon,
+              hasilBaru.kategori,
+            );
           }
         },
         child: const Icon(Icons.add),
@@ -226,15 +244,17 @@ class KontakPage extends StatelessWidget {
       itemBuilder: (context, index) {
         final kontak = daftarKontak[index];
         return ListTile(
-  leading: CircleAvatar(
-    backgroundColor: Colors.blue,
-    child: Text(
-      kontak.nama.isNotEmpty ? kontak.nama[0].toUpperCase() : '?',
-      style: const TextStyle(color: Colors.white),
-    ),
-  ),
-  title: Text(kontak.nama),
-          subtitle: Text('${kontak.email}\n${kontak.telepon}'),
+          leading: CircleAvatar(
+            backgroundColor: Colors.blue,
+            child: Text(
+              kontak.nama.isNotEmpty ? kontak.nama[0].toUpperCase() : '?',
+              style: const TextStyle(color: Colors.white),
+            ),
+          ),
+          title: Text(kontak.nama),
+          subtitle: Text(
+            '${kontak.email}\n${kontak.telepon}\n${kontak.kategori ?? 'Tanpa kategori'}',
+          ),
           isThreeLine: true,
           trailing: Row(
             mainAxisSize: MainAxisSize.min,
@@ -258,7 +278,7 @@ class KontakPage extends StatelessWidget {
   }
 }
 
-// FavoritPage gabungan: Menampilkan kontak bawaan (Anshar)
+// FavoritPage gabungan: Menampilkan kontak bawaan (Andreas)
 // dan kontak dinamis yang ditandai bintang
 class FavoritPage extends StatelessWidget {
   final List<KontakModel> daftarFavorit;
@@ -287,7 +307,9 @@ class FavoritPage extends StatelessWidget {
           (kontak) => ListTile(
             leading: const Icon(Icons.person),
             title: Text(kontak.nama),
-            subtitle: Text('${kontak.email}\n${kontak.telepon}'),
+            subtitle: Text(
+              '${kontak.email}\n${kontak.telepon}\n${kontak.kategori ?? 'Tanpa kategori'}',
+            ),
             isThreeLine: true,
             trailing: IconButton(
               icon: const Icon(Icons.star, color: Colors.amber),
@@ -312,6 +334,7 @@ class _TambahKontakPageState extends State<TambahKontakPage> {
   final TextEditingController _namaController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _teleponController = TextEditingController();
+  final TextEditingController _kategoriController = TextEditingController();
 
   @override
   Widget build(BuildContext context) {
@@ -346,6 +369,12 @@ class _TambahKontakPageState extends State<TambahKontakPage> {
                 decoration: const InputDecoration(labelText: 'No Handphone'),
                 keyboardType: TextInputType.phone,
               ),
+              TextFormField(
+                controller: _kategoriController,
+                decoration: const InputDecoration(
+                  labelText: 'Kategori (Keluarga/Teman/Kerja) - opsional',
+                ),
+              ),
               const SizedBox(height: 30),
               ElevatedButton(
                 onPressed: () {
@@ -356,6 +385,9 @@ class _TambahKontakPageState extends State<TambahKontakPage> {
                         nama: _namaController.text,
                         email: _emailController.text,
                         telepon: _teleponController.text,
+                        kategori: _kategoriController.text.isEmpty
+                            ? null
+                            : _kategoriController.text,
                       ),
                     );
                   }
